@@ -27,9 +27,9 @@ jobs:
         uses: actions/configure-pages@v5
       - uses: mymindstorm/setup-emsdk@master
       - name: Configure (CMake)
-        run: emcmake cmake -B build -DDOWNLOAD_DEPENDENCIES=ON
+        run: emcmake cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -B build -DDOWNLOAD_DEPENDENCIES=ON
       - name: Build (CMake)
-        run: cmake --build build --parallel
+        run: cmake --build build --config Release --parallel
       - name: Prepare for upload
         run: |
           mkdir build/dist
