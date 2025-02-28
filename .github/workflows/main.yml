@@ -1,45 +1,47 @@
 name: Build
 
-on: [push, pull_request]
+on:
+  - push
+  - pull_request
 
 jobs:
   desktop:
-    name: ${{ matrix.platform.name }}
-    runs-on: ${{ matrix.platform.os }}
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        platform:
-        - { name: Linux,   os: ubuntu-latest }
-        - { name: Windows, os: windows-2025 }
-        - { name: MacOS,   os: macos-latest }
+        os:
+          - ubuntu-latest
+          - windows-2025
+          - macos-latest
     steps:
-    - name: Set up SDL
-      id: sdl
-      uses: libsdl-org/setup-sdl@main
-      with:
-        version: sdl3-head
-    - name: Get project sources
-      uses: actions/checkout@v4
-    - name: Configure (CMake)
-      run: cmake -B build ${{ matrix.platform.flags }} -DDOWNLOAD_DEPENDENCIES=OFF
-    - name: Build (CMake)
-      run: cmake --build build/
+      - name: Set up SDL
+        id: sdl
+        uses: libsdl-org/setup-sdl@main
+        with:
+          version: sdl3-head
+      - name: Get project sources
+        uses: actions/checkout@v4
+      - name: Configure (CMake)
+        run: cmake -B build -DDOWNLOAD_DEPENDENCIES=OFF
+      - name: Build (CMake)
+        run: cmake --build build/
 
   emscripten:
-    name: Emscripten
+    name: emscripten
     runs-on: ubuntu-latest
     steps:
       - name: Get project sources
         uses: actions/checkout@v4
       - uses: mymindstorm/setup-emsdk@master
       - name: Configure (CMake)
-        run: emcmake cmake -B build ${{ matrix.platform.flags }} -DDOWNLOAD_DEPENDENCIES=ON
+        run: emcmake cmake -B build -DDOWNLOAD_DEPENDENCIES=ON
       - name: Build (CMake)
         run: cmake --build build/
 
   android:
-    name: Android
+    name: android
     runs-on: ubuntu-latest
     steps:
       - name: Get project sources
