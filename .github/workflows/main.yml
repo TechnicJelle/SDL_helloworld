@@ -20,13 +20,21 @@ jobs:
         id: sdl
         uses: libsdl-org/setup-sdl@main
         with:
-          version: sdl3-head
+          version: 3-latest
+          pre-release: false
+          build-type: Release
       - name: Get project sources
         uses: actions/checkout@v4
       - name: Configure (CMake)
-        run: cmake -B build -DDOWNLOAD_DEPENDENCIES=OFF
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DDOWNLOAD_DEPENDENCIES=OFF
       - name: Build (CMake)
-        run: cmake --build build/
+        run: cmake --build build --config Release --parallel
+      - name: Upload Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}
+          path: build/Release/
+
 
   emscripten:
     name: emscripten
