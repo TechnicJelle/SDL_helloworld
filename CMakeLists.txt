@@ -40,6 +40,8 @@ target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE SDL3::SDL3)
 set_property(TARGET ${CMAKE_PROJECT_NAME} PROPERTY WIN32_EXECUTABLE TRUE)
 
 if (EMSCRIPTEN)
+	# Output to index.html for easier deployments
+	set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "index")
 	# Create a html webpage
 	set_property(TARGET ${CMAKE_PROJECT_NAME} PROPERTY SUFFIX ".html")
 endif ()
