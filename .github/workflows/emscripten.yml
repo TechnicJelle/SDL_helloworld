@@ -25,6 +25,8 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup Pages
         uses: actions/configure-pages@v5
+      - name: Install dependencies
+        run: sudo apt install ninja-build
       - uses: mymindstorm/setup-emsdk@master
       - name: Configure (CMake)
         run: emcmake cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -B build -DDOWNLOAD_DEPENDENCIES=ON
