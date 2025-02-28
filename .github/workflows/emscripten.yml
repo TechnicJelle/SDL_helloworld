@@ -30,10 +30,14 @@ jobs:
         run: emcmake cmake -B build -DDOWNLOAD_DEPENDENCIES=ON
       - name: Build (CMake)
         run: cmake --build build --parallel
+      - name: Prepare for upload
+        run: |
+          mkdir build/dist
+          mv build/index.* build/dist/
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'build/'
+          path: 'build/dist/'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
