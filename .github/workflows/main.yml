@@ -60,4 +60,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: android
-          path: android-project/app/build/outputs/apk/release
+          path: android-project/app/build/outputs/apk/debug/
