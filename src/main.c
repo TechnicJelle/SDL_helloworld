@@ -1,6 +1,5 @@
-#define SDL_MAIN_USE_CALLBACKS
-
 #include <SDL3/SDL.h>
+#define SDL_MAIN_USE_CALLBACKS
 #include <SDL3/SDL_main.h>
 
 static SDL_Window* window = NULL;
@@ -43,6 +42,9 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event) {
 			// center the square where the mouse is
 			mouseposrect.x = event->motion.x - (mouseposrect.w / 2);
 			mouseposrect.y = event->motion.y - (mouseposrect.h / 2);
+			break;
+
+		default:
 			break;
 	}
 	return SDL_APP_CONTINUE;
