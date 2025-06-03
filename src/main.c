@@ -4,26 +4,32 @@
 #include <SDL3/SDL_main.h>
 
 static SDL_Window* window = NULL;
-static SDL_Renderer* renderer = NULL;
+static SDL_GPUDevice* device = NULL;
 
-static SDL_FRect mouseposrect;
+SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
+	SDL_SetAppMetadata("SDL Hello World Example", "1.0", "com.example.sdl-hello-world");
 
-SDL_AppResult SDL_AppIterate(void* appstate) {
-	// fade between shades of red every 3 seconds, from 0 to 255.
-	Uint8 r = (Uint8) ((((float) (SDL_GetTicks() % 3000)) / 3000.0f) * 255.0f);
-	SDL_SetRenderDrawColor(renderer, r, 0, 0, 255);
+	if (!SDL_Init(SDL_INIT_VIDEO)) {
+		SDL_Log("SDL_Init(SDL_INIT_VIDEO) failed: %s", SDL_GetError());
+		return SDL_APP_FAILURE;
+	}
 
-	// you have to draw the whole window every frame. Clearing it makes sure the whole thing is sane.
-	SDL_RenderClear(renderer); // clear whole window to that fade color.
+	window = SDL_CreateWindow("Hello SDL GPU", 640, 480, SDL_WINDOW_RESIZABLE);
+	if (window == NULL) {
+		SDL_Log("SDL_CreateWindow() failed: %s", SDL_GetError());
+		return SDL_APP_FAILURE;
+	}
 
-	// set the color to white
-	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+	device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV, true, NULL);
+	if (device == NULL) {
+		SDL_Log("SDL_CreateGPUDevice() failed: %s", SDL_GetError());
+		return SDL_APP_FAILURE;
+	}
 
-	// draw a square where the mouse cursor currently is.
-	SDL_RenderFillRect(renderer, &mouseposrect);
-
-	// put everything we drew to the screen.
-	SDL_RenderPresent(renderer);
+	if (!SDL_ClaimWindowForGPUDevice(device, window)) {
+		SDL_Log("SDL_ClaimWindowForGPUDevice() failed: %s", SDL_GetError());
+		return SDL_APP_FAILURE;
+	}
 
 	return SDL_APP_CONTINUE;
 }
@@ -38,37 +44,44 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event) {
 				return SDL_APP_SUCCESS;
 			}
 			break;
-
-		case SDL_EVENT_MOUSE_MOTION: // keep track of the latest mouse position
-			// center the square where the mouse is
-			mouseposrect.x = event->motion.x - (mouseposrect.w / 2);
-			mouseposrect.y = event->motion.y - (mouseposrect.h / 2);
+		default:
 			break;
 	}
 	return SDL_APP_CONTINUE;
 }
 
-SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
-	SDL_SetAppMetadata("SDL Hello World Example", "1.0", "com.example.sdl-hello-world");
 
-	if (!SDL_Init(SDL_INIT_VIDEO)) {
-		SDL_Log("SDL_Init(SDL_INIT_VIDEO) failed: %s", SDL_GetError());
+SDL_AppResult SDL_AppIterate(void* appstate) {
+	SDL_GPUCommandBuffer* commandBuffer = SDL_AcquireGPUCommandBuffer(device);
+	if (commandBuffer == NULL) {
+		SDL_Log("AcquireGPUCommandBuffer failed: %s", SDL_GetError());
 		return SDL_APP_FAILURE;
 	}
 
-	if (!SDL_CreateWindowAndRenderer("Hello SDL", 640, 480, SDL_WINDOW_RESIZABLE, &window, &renderer)) {
-		SDL_Log("SDL_CreateWindowAndRenderer() failed: %s", SDL_GetError());
+	SDL_GPUTexture* swapchainTexture;
+	if (!SDL_WaitAndAcquireGPUSwapchainTexture(commandBuffer, window, &swapchainTexture, NULL, NULL)) {
+		SDL_Log("WaitAndAcquireGPUSwapchainTexture failed: %s", SDL_GetError());
 		return SDL_APP_FAILURE;
 	}
 
-	mouseposrect.x = mouseposrect.y = -1000; // -1000 so it's offscreen at start
-	mouseposrect.w = mouseposrect.h = 50;
+	if (swapchainTexture != NULL) {
+		SDL_GPUColorTargetInfo colorTargetInfo = {NULL};
+		colorTargetInfo.texture = swapchainTexture;
+		colorTargetInfo.clear_color = (SDL_FColor){0.3f, 0.4f, 0.5f, 1.0f};
+		colorTargetInfo.load_op = SDL_GPU_LOADOP_CLEAR;
+		colorTargetInfo.store_op = SDL_GPU_STOREOP_STORE;
+
+		SDL_GPURenderPass* renderPass = SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, NULL);
+		SDL_EndGPURenderPass(renderPass);
+	}
+
+	SDL_SubmitGPUCommandBuffer(commandBuffer);
 
 	return SDL_APP_CONTINUE;
 }
 
 void SDL_AppQuit(void* appstate, SDL_AppResult result) {
-	SDL_DestroyRenderer(renderer);
+	SDL_DestroyGPUDevice(device);
 	SDL_DestroyWindow(window);
 	SDL_Quit();
 }
