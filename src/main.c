@@ -1,6 +1,5 @@
-#define SDL_MAIN_USE_CALLBACKS
-
 #include <SDL3/SDL.h>
+#define SDL_MAIN_USE_CALLBACKS
 #include <SDL3/SDL_main.h>
 
 #include <volk.h>
@@ -59,6 +58,7 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event) {
 				return SDL_APP_SUCCESS;
 			}
 			break;
+
 		default:
 			break;
 	}
