@@ -116,7 +116,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
 	VkPhysicalDevice* devices = SDL_malloc(deviceCount * sizeof(VkPhysicalDevice));
 	vkEnumeratePhysicalDevices(instance, &deviceCount, devices);
 
-	deviceNames = SDL_malloc(deviceCount * sizeof(char*));
+	deviceNames = (char**) SDL_malloc(deviceCount * sizeof(char*));
 
 	//loop through the devices to log and save their names.
 	for (uint32_t i = 0; i < deviceCount; i++) {
@@ -132,7 +132,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
 		SDL_Log("Device %d: %s", i, deviceName);
 
 		// allocate memory for the device name and copy it.
-		deviceNames[i] = SDL_malloc(strLen);
+		deviceNames[i] = (char*) SDL_malloc(strLen);
 		SDL_strlcpy(deviceNames[i], deviceName, strLen);
 	}
 
