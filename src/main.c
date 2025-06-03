@@ -3,24 +3,45 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 
+#include <volk.h>
+
 static SDL_Window* window = NULL;
 static SDL_Renderer* renderer = NULL;
+static VkInstance instance = NULL;
+static uint32_t deviceCount = 0; //number of Vulkan devices found
+static char** deviceNames = NULL; //array of device names
 
-static SDL_FRect mouseposrect;
+// Macro for validating Vulkan function call results
+#define VK_CHECK(x, msg) \
+	do { \
+		VkResult err = x; \
+		if (err) { \
+			SDL_Log("Detected Vulkan error: %s", msg); \
+			SDL_TriggerBreakpoint(); \
+			return SDL_APP_FAILURE; \
+		} \
+	} while (0)
+
 
 SDL_AppResult SDL_AppIterate(void* appstate) {
-	// fade between shades of red every 3 seconds, from 0 to 255.
-	Uint8 r = (Uint8) ((((float) (SDL_GetTicks() % 3000)) / 3000.0f) * 255.0f);
-	SDL_SetRenderDrawColor(renderer, r, 0, 0, 255);
+	// draw a black background.
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+	SDL_RenderClear(renderer);
 
-	// you have to draw the whole window every frame. Clearing it makes sure the whole thing is sane.
-	SDL_RenderClear(renderer); // clear whole window to that fade color.
+	// get the safe area for drawing the text into.
+	SDL_Rect safeArea;
+	SDL_GetRenderSafeArea(renderer, &safeArea);
 
-	// set the color to white
+	// draw the array of device names.
 	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-
-	// draw a square where the mouse cursor currently is.
-	SDL_RenderFillRect(renderer, &mouseposrect);
+	SDL_RenderDebugText(renderer, (float) safeArea.x + 10.0f, (float) safeArea.y + 10.0f, "Vulkan Devices:");
+	if (deviceNames) {
+		for (uint32_t i = 0; i < deviceCount; i++) {
+			SDL_RenderDebugText(renderer, (float) safeArea.x + 30.0f, (float) safeArea.y + 30.0f + (float) i * 20.0f, deviceNames[i]);
+		}
+	} else {
+		SDL_RenderDebugText(renderer, (float) safeArea.x + 10.0f, (float) safeArea.y + 30.0f, "No Vulkan devices found");
+	}
 
 	// put everything we drew to the screen.
 	SDL_RenderPresent(renderer);
@@ -38,11 +59,7 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event) {
 				return SDL_APP_SUCCESS;
 			}
 			break;
-
-		case SDL_EVENT_MOUSE_MOTION: // keep track of the latest mouse position
-			// center the square where the mouse is
-			mouseposrect.x = event->motion.x - (mouseposrect.w / 2);
-			mouseposrect.y = event->motion.y - (mouseposrect.h / 2);
+		default:
 			break;
 	}
 	return SDL_APP_CONTINUE;
@@ -56,18 +73,83 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
 		return SDL_APP_FAILURE;
 	}
 
-	if (!SDL_CreateWindowAndRenderer("Hello SDL", 640, 480, SDL_WINDOW_RESIZABLE, &window, &renderer)) {
+	SDL_WindowFlags flags = SDL_WINDOW_RESIZABLE;
+#ifdef SDL_PLATFORM_ANDROID
+	// on android, we want to use the whole screen.
+	flags |= SDL_WINDOW_FULLSCREEN;
+#endif
+	if (!SDL_CreateWindowAndRenderer("Hello SDL", 640, 480, flags, &window, &renderer)) {
 		SDL_Log("SDL_CreateWindowAndRenderer() failed: %s", SDL_GetError());
 		return SDL_APP_FAILURE;
 	}
 
-	mouseposrect.x = mouseposrect.y = -1000; // -1000 so it's offscreen at start
-	mouseposrect.w = mouseposrect.h = 50;
+	// initialize Volk, the Vulkan loader.
+	VK_CHECK(volkInitialize(), "Couldn't initialize Volk");
+
+	// create a Vulkan instance.
+	VkApplicationInfo appInfo = {
+		.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+		.pApplicationName = "Hello Triangle",
+		.applicationVersion = VK_MAKE_VERSION(1, 0, 0),
+		.pEngineName = "No Engine",
+		.engineVersion = VK_MAKE_VERSION(1, 0, 0),
+		.apiVersion = VK_API_VERSION_1_0
+	};
+
+	const VkInstanceCreateInfo createInfo = {
+		.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+		.pApplicationInfo = &appInfo,
+	};
+
+	VK_CHECK(vkCreateInstance(&createInfo, NULL, &instance), "Failed to create Vulkan instance");
+
+	volkLoadInstance(instance);
+
+	// get the number of physical Vulkan devices available.
+	vkEnumeratePhysicalDevices(instance, &deviceCount, NULL);
+	if (deviceCount == 0) {
+		SDL_Log("No Vulkan devices found");
+		return SDL_APP_FAILURE;
+	}
+
+	// store the devices in an array.
+	VkPhysicalDevice* devices = SDL_malloc(deviceCount * sizeof(VkPhysicalDevice));
+	vkEnumeratePhysicalDevices(instance, &deviceCount, devices);
+
+	deviceNames = SDL_malloc(deviceCount * sizeof(char*));
+
+	//loop through the devices to log and save their names.
+	for (uint32_t i = 0; i < deviceCount; i++) {
+		// get the properties of the physical device.
+		VkPhysicalDeviceProperties properties;
+		vkGetPhysicalDeviceProperties(devices[i], &properties);
+
+		// temporary variables.
+		char* deviceName = properties.deviceName;
+		const size_t strLen = SDL_strlen(deviceName) + 1;
+
+		// log the device name.
+		SDL_Log("Device %d: %s", i, deviceName);
+
+		// allocate memory for the device name and copy it.
+		deviceNames[i] = SDL_malloc(strLen);
+		SDL_strlcpy(deviceNames[i], deviceName, strLen);
+	}
+
+	// free the Vulkan devices array (our own names array is kept).
+	SDL_free(devices);
 
 	return SDL_APP_CONTINUE;
 }
 
 void SDL_AppQuit(void* appstate, SDL_AppResult result) {
+	for (uint32_t i = 0; i < deviceCount; i++) {
+		SDL_free(deviceNames[i]); // free each device name.
+	}
+	SDL_free(deviceNames); // free the array of device names.
+
+	vkDestroyInstance(instance, NULL);
+
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 	SDL_Quit();

@@ -8,6 +8,8 @@ option(DOWNLOAD_DEPENDENCIES "Download dependencies" TRUE)
 if (DOWNLOAD_DEPENDENCIES)
 	# FetchContent downloads and configures dependencies
 	include(FetchContent)
+
+	# SDL3
 	FetchContent_Declare(
 			SDL3
 			GIT_REPOSITORY "https://github.com/libsdl-org/SDL.git"
@@ -15,11 +17,34 @@ if (DOWNLOAD_DEPENDENCIES)
 			EXCLUDE_FROM_ALL
 	)
 	FetchContent_MakeAvailable(SDL3)
+
+	# Volk
+	FetchContent_Declare(
+			Volk
+			GIT_REPOSITORY "https://github.com/zeux/volk.git"
+			GIT_TAG "master"
+			EXCLUDE_FROM_ALL
+	)
+	FetchContent_MakeAvailable(Volk)
 else ()
 	# find_package looks for already-installed system packages.
 	# Configure with `-DCMAKE_PREFIX_PATH="/path/to/package1;/path/to/package2"`
 	# to add search paths.
 	find_package(SDL3 CONFIG REQUIRED)
+
+	# On Android, we have no choice but to download Volk manually
+	if (NOT ANDROID)
+		find_package(volk CONFIG REQUIRED)
+	else ()
+		include(FetchContent)
+		FetchContent_Declare(
+				Volk
+				GIT_REPOSITORY "https://github.com/zeux/volk.git"
+				GIT_TAG "master"
+				EXCLUDE_FROM_ALL
+		)
+		FetchContent_MakeAvailable(Volk)
+	endif ()
 endif ()
 
 if (ANDROID)
@@ -34,6 +59,7 @@ add_executable(${CMAKE_PROJECT_NAME}
 )
 
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE SDL3::SDL3)
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE volk::volk)
 
 # This is safe to set on all platforms. Otherwise your SDL app will
 #  have a terminal window pop up with it on Windows.
