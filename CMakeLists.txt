@@ -37,7 +37,8 @@ else ()
 	# to add search paths.
 	find_package(SDL3 CONFIG REQUIRED)
 
-	# On Android, we have no choice but to download Volk manually
+	# On Android, we have no choice but to download Volk manually, because we have no pre-compiled .aar,
+	# we cannot use the system-installation, and it isn't included in the Android SDK either.
 	if (NOT ANDROID)
 		find_package(volk CONFIG REQUIRED)
 	else ()
