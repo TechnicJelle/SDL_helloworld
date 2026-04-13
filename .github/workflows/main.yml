@@ -18,6 +18,10 @@ jobs:
           - macos-latest
     steps:
       - uses: actions/checkout@v6
+      - uses: humbletim/install-vulkan-sdk@v1.2
+        with:
+          version: latest
+          cache: true
       - uses: libsdl-org/setup-sdl@main
         id: sdl
         with:
