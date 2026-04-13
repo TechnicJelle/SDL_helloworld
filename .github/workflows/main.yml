@@ -24,6 +24,7 @@ jobs:
           version: 3-latest
           pre-release: false
           build-type: Release
+          install-linux-dependencies: true
           cmake-generator: Ninja
       - name: Check outputs
         run: |
