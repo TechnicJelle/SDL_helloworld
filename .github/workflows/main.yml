@@ -26,14 +26,15 @@ jobs:
           build-type: Release
           install-linux-dependencies: true
           cmake-generator: Ninja
-      - name: Check outputs
-        run: |
-          echo "${{ steps.sdl.outputs.prefix }}"
-          tree ${{ steps.sdl.outputs.prefix }}
       - name: Configure (CMake)
         run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DDOWNLOAD_DEPENDENCIES=OFF
       - name: Build (CMake)
         run: cmake --build build --config Release --parallel
+      - name: Copy dynamic libraries to build output dir
+        run: |
+          cp ${{ steps.sdl.outputs.prefix }}/lib/*.so* build/Release/
+          cp ${{ steps.sdl.outputs.prefix }}/lib/*.dll* build/Release/
+          cp ${{ steps.sdl.outputs.prefix }}/lib/*.dylib* build/Release/
       - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.os }}
