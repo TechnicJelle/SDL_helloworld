@@ -30,11 +30,17 @@ jobs:
         run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DDOWNLOAD_DEPENDENCIES=OFF
       - name: Build (CMake)
         run: cmake --build build --config Release --parallel
-      - name: Copy dynamic libraries to build output dir
+      - name: Copy dynamic libraries to build output dir (Linux)
+        if: startsWith(matrix.os, 'ubuntu')
+        run: cp ${{ steps.sdl.outputs.prefix }}/lib/*.so* build/Release/
+      - name: Copy dynamic libraries to build output dir (Windows)
+        if: startsWith(matrix.os, 'windows')
+        run: cp ${{ steps.sdl.outputs.prefix }}/lib/*.dll build/Release/
+      - name: Copy dynamic libraries to build output dir (MacOS)
+        if: startsWith(matrix.os, 'macos')
         run: |
-          cp ${{ steps.sdl.outputs.prefix }}/lib/*.so* build/Release/
-          cp ${{ steps.sdl.outputs.prefix }}/lib/*.dll* build/Release/
-          cp ${{ steps.sdl.outputs.prefix }}/lib/*.dylib* build/Release/
+          ls ${{ steps.sdl.outputs.prefix }}/lib/
+          cp ${{ steps.sdl.outputs.prefix }}/lib/*.dylib build/Release/
       - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.os }}
