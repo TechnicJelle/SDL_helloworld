@@ -1,8 +1,9 @@
 name: Build
 
 on:
-  - push
-  - pull_request
+  push:
+  pull_request:
+  workflow_dispatch:
 
 jobs:
   desktop:
@@ -16,39 +17,45 @@ jobs:
           - windows-2025
           - macos-latest
     steps:
-      - name: Set up SDL
+      - uses: actions/checkout@v6
+      - uses: libsdl-org/setup-sdl@main
         id: sdl
-        uses: libsdl-org/setup-sdl@main
         with:
           version: 3-latest
           pre-release: false
           build-type: Release
-      - name: Get project sources
-        uses: actions/checkout@v4
+          install-linux-dependencies: true
+          cmake-generator: Ninja
       - name: Configure (CMake)
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DDOWNLOAD_DEPENDENCIES=OFF
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DDOWNLOAD_DEPENDENCIES=OFF
       - name: Build (CMake)
         run: cmake --build build --config Release --parallel
-      - name: Upload Build
-        uses: actions/upload-artifact@v4
+      - name: Copy dynamic libraries to build output dir (Linux)
+        if: startsWith(matrix.os, 'ubuntu')
+        run: cp ${{ steps.sdl.outputs.prefix }}/lib/*.so* build/Release/
+      - name: Copy dynamic libraries to build output dir (Windows)
+        if: startsWith(matrix.os, 'windows')
+        run: cp ${{ steps.sdl.outputs.prefix }}/bin/*.dll build/Release/
+      - name: Copy dynamic libraries to build output dir (MacOS)
+        if: startsWith(matrix.os, 'macos')
+        run: cp ${{ steps.sdl.outputs.prefix }}/lib/*.dylib build/Release/
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.os }}
-          path: build/
+          path: build/Release/
 
   android:
     name: android
     runs-on: ubuntu-latest
     steps:
-      - name: Get project sources
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Download SDL3 Android Archive
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh -R libsdl-org/SDL release download release-3.2.4 -p 'SDL3-devel-*-android.zip'
-          unzip "SDL3-devel-3.2.4-android.zip" -d android-project/app/libs SDL3-3.2.4.aar
-      - name: Setup required Java version
-        uses: actions/setup-java@v4
+          gh -R libsdl-org/SDL release download release-3.4.4 -p 'SDL3-devel-*-android.zip'
+          unzip "SDL3-devel-3.4.4-android.zip" -d android-project/app/libs SDL3-3.4.4.aar
+      - uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -57,7 +64,7 @@ jobs:
           cd android-project
           ./gradlew assembleDebug
       - name: Upload Build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: android
           path: android-project/app/build/outputs/apk/debug/
