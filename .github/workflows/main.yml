@@ -30,7 +30,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.os }}
-          path: build/
+          path: build/Release/
 
   android:
     name: android
