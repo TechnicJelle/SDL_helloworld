@@ -28,6 +28,7 @@ jobs:
       - name: Check outputs
         run: |
           echo "${{ steps.sdl.outputs.prefix }}"
+          tree ${{ steps.sdl.outputs.prefix }}
       - name: Configure (CMake)
         run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DDOWNLOAD_DEPENDENCIES=OFF
       - name: Build (CMake)
