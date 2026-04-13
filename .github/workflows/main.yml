@@ -19,10 +19,15 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: libsdl-org/setup-sdl@main
+        id: sdl
         with:
           version: 3-latest
           pre-release: false
           build-type: Release
+          cmake-generator: Ninja
+      - name: Check outputs
+        run: |
+          echo "${{ steps.sdl.outputs.prefix }}"
       - name: Configure (CMake)
         run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DDOWNLOAD_DEPENDENCIES=OFF
       - name: Build (CMake)
