@@ -33,10 +33,10 @@ jobs:
       - name: Prepare for upload
         run: |
           mkdir build/dist
-          mv build/index.* build/dist/
+          mv build/Release/index.* build/dist/
       - uses: actions/upload-pages-artifact@v5
         with:
-          path: 'build/dist/Release/'
+          path: 'build/dist/'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
