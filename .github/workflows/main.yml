@@ -35,12 +35,13 @@ jobs:
         run: cp ${{ steps.sdl.outputs.prefix }}/lib/*.so* build/Release/
       - name: Copy dynamic libraries to build output dir (Windows)
         if: startsWith(matrix.os, 'windows')
-        run: cp ${{ steps.sdl.outputs.prefix }}/lib/*.dll build/Release/
-      - name: Copy dynamic libraries to build output dir (MacOS)
-        if: startsWith(matrix.os, 'macos')
         run: |
           ls ${{ steps.sdl.outputs.prefix }}/lib/
-          cp ${{ steps.sdl.outputs.prefix }}/lib/*.dylib build/Release/
+          tree /f /a ${{ steps.sdl.outputs.prefix }}
+          cp ${{ steps.sdl.outputs.prefix }}/lib/*.dll build/Release/
+      - name: Copy dynamic libraries to build output dir (MacOS)
+        if: startsWith(matrix.os, 'macos')
+        run: cp ${{ steps.sdl.outputs.prefix }}/lib/*.dylib build/Release/
       - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.os }}
