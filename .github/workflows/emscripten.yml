@@ -36,7 +36,7 @@ jobs:
           mv build/index.* build/dist/
       - uses: actions/upload-pages-artifact@v5
         with:
-          path: 'build/dist/'
+          path: 'build/dist/Release/'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
