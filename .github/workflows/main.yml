@@ -23,8 +23,6 @@ jobs:
           version: 3-latest
           pre-release: false
           build-type: Release
-      - name: Install dependencies
-        run: sudo apt install ninja-build
       - name: Configure (CMake)
         run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DDOWNLOAD_DEPENDENCIES=OFF
       - name: Build (CMake)
