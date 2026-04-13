@@ -35,10 +35,7 @@ jobs:
         run: cp ${{ steps.sdl.outputs.prefix }}/lib/*.so* build/Release/
       - name: Copy dynamic libraries to build output dir (Windows)
         if: startsWith(matrix.os, 'windows')
-        run: |
-          ls ${{ steps.sdl.outputs.prefix }}/lib/
-          tree /f /a ${{ steps.sdl.outputs.prefix }}
-          cp ${{ steps.sdl.outputs.prefix }}/lib/*.dll build/Release/
+        run: cp ${{ steps.sdl.outputs.prefix }}/bin/*.dll build/Release/
       - name: Copy dynamic libraries to build output dir (MacOS)
         if: startsWith(matrix.os, 'macos')
         run: cp ${{ steps.sdl.outputs.prefix }}/lib/*.dylib build/Release/
